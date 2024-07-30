@@ -313,7 +313,7 @@ def get_player_info(playerName='', playerID='', getStats='true'):
         print(querystring)
 
 
-def get_player_stats(playerID='', gameID='', numberOfGames=''):
+def get_player_stats(playerID='', gameID='', numberOfGames='', ppr=1.0, passTD=6.0):
     
     database_name = 'getNFLGamesForPlayer'
 
@@ -385,7 +385,7 @@ def get_team_roster(teamAbv, archiveDate='today'):
 
     querystring = {
         "teamAbv": str(teamAbv),
-        "archiveDate": str(season),
+        "archiveDate": str(archiveDate),
         "getStats": "true"
     }
     headers = get_headers_and_host()

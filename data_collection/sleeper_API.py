@@ -133,7 +133,8 @@ def get_league_traded_picks(league_id='1095093570517798912'):
     
 def get_user_drafts(user_id='', year=2024):
 
-    url = f'https://api.sleeper.app/v1/league/{league_id}/traded_picks'
+    url = f'https://api.sleeper.app/v1/user/{user_id}/drafts/nfl/{year}'
+    
     response = requests.get(url)
 
     # Check if the request was successful
