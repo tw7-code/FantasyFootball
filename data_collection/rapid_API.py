@@ -3,6 +3,11 @@ from dotenv import load_dotenv
 import os
 from datetime import datetime
 
+__all__ = ['get_news', 'get_game_info', 'get_scores', 'get_weekly_schedule',
+           'get_team_schedule', 'get_gameday_schedule', 'get_box_score', 'get_fantasy_projections',
+           'get_team_stats', 'get_ADP_data', 'get_player_info', 'get_player_stats',
+           'get_betting_odds', 'get_team_roster', 'get_player_list']
+
 def get_headers_and_host():
 
     load_dotenv()
