@@ -1,6 +1,5 @@
 import requests
-from dotenv import load_dotenv
-import os
+from environs import Env
 from datetime import datetime
 
 __all__ = ['get_news', 'get_game_info', 'get_scores', 'get_weekly_schedule',
@@ -10,9 +9,11 @@ __all__ = ['get_news', 'get_game_info', 'get_scores', 'get_weekly_schedule',
 
 def get_headers_and_host():
 
-    load_dotenv()
-    api_key = os.getenv('RAPID_API_KEY')
-    database_url = os.getenv('RAPID_DATABASE_URL')    
+    env = Env()
+    env.read_env()
+
+    api_key = env.str('RAPID_API_KEY')
+    database_url = env.str('RAPID_DATABASE_URL')    
     headers = {
         "x-rapidapi-key": api_key,
         "x-rapidapi-host": database_url
@@ -34,7 +35,7 @@ def get_news(playerID, teamID, teamAbv, topNews, fantasyNews, recentNews, maxIte
         "maxItems": str(maxItems)
     }
     headers = get_headers_and_host()
-    url = f'https://{headers['x-rapidapi-host']}/{database_name}'
+    url = f"https://{headers['x-rapidapi-host']}/{database_name}"
 
     response = requests.get(url, headers=headers, params=querystring)
 
@@ -45,7 +46,6 @@ def get_news(playerID, teamID, teamAbv, topNews, fantasyNews, recentNews, maxIte
         return data
     else:
         print(f'Failed to retrieve data: {response.status_code}')
-        print()
         print(querystring)
 
 
@@ -57,7 +57,7 @@ def get_game_info(gameID):
         'gameID': str(gameID)
     }
     headers = get_headers_and_host()
-    url = f'https://{headers['x-rapidapi-host']}/{database_name}'
+    url = f"https://{headers['x-rapidapi-host']}/{database_name}"
 
     response = requests.get(url, headers=headers, params=querystring)
 
@@ -68,7 +68,6 @@ def get_game_info(gameID):
         return data
     else:
         print(f'Failed to retrieve data: {response.status_code}')
-        print()
         print(querystring)
 
 
@@ -85,7 +84,7 @@ def get_scores(gameDate, gameID, topPerformers, gameWeek, season, seasonType):
         "seasonType": str(seasonType)
     }
     headers = get_headers_and_host()
-    url = f'https://{headers['x-rapidapi-host']}/{database_name}'
+    url = f"https://{headers['x-rapidapi-host']}/{database_name}"
 
     response = requests.get(url, headers=headers, params=querystring)
 
@@ -96,7 +95,6 @@ def get_scores(gameDate, gameID, topPerformers, gameWeek, season, seasonType):
         return data
     else:
         print(f'Failed to retrieve data: {response.status_code}')
-        print()
         print(querystring)
 
 
@@ -110,7 +108,7 @@ def get_weekly_schedule(week, seasonType, season):
         "season": str(season)
     } 
     headers = get_headers_and_host()
-    url = f'https://{headers['x-rapidapi-host']}/{database_name}'
+    url = f"https://{headers['x-rapidapi-host']}/{database_name}"
 
     response = requests.get(url, headers=headers, params=querystring)
 
@@ -121,7 +119,6 @@ def get_weekly_schedule(week, seasonType, season):
         return data
     else:
         print(f'Failed to retrieve data: {response.status_code}')
-        print()
         print(querystring)
 
 
@@ -135,7 +132,7 @@ def get_team_schedule(teamID, teamAbv, season):
         "season": str(season)
     }
     headers = get_headers_and_host()
-    url = f'https://{headers['x-rapidapi-host']}/{database_name}'
+    url = f"https://{headers['x-rapidapi-host']}/{database_name}"
 
     response = requests.get(url, headers=headers, params=querystring)
 
@@ -146,7 +143,6 @@ def get_team_schedule(teamID, teamAbv, season):
         return data
     else:
         print(f'Failed to retrieve data: {response.status_code}')
-        print()
         print(querystring)
 
 
@@ -158,7 +154,7 @@ def get_gameday_schedule(gameDate):
         "gameDate": str(gameDate)
     }
     headers = get_headers_and_host()
-    url = f'https://{headers['x-rapidapi-host']}/{database_name}'
+    url = f"https://{headers['x-rapidapi-host']}/{database_name}"
 
     response = requests.get(url, headers=headers, params=querystring)
 
@@ -182,7 +178,7 @@ def get_box_score(gameID, playByPlay):
         "playByPlay": str(playByPlay)
     }
     headers = get_headers_and_host()
-    url = f'https://{headers['x-rapidapi-host']}/{database_name}'
+    url = f"https://{headers['x-rapidapi-host']}/{database_name}"
 
     response = requests.get(url, headers=headers, params=querystring)
 
@@ -193,7 +189,6 @@ def get_box_score(gameID, playByPlay):
         return data
     else:
         print(f'Failed to retrieve data: {response.status_code}')
-        print()
         print(querystring)
 
 
@@ -212,7 +207,7 @@ def get_fantasy_projections(week, season=2024, ppr=1.0, passTD=6.0):
         "targets": "0.0"
     }
     headers = get_headers_and_host()
-    url = f'https://{headers['x-rapidapi-host']}/{database_name}'
+    url = f"https://{headers['x-rapidapi-host']}/{database_name}"
 
     response = requests.get(url, headers=headers, params=querystring)
 
@@ -223,7 +218,6 @@ def get_fantasy_projections(week, season=2024, ppr=1.0, passTD=6.0):
         return data
     else:
         print(f'Failed to retrieve data: {response.status_code}')
-        print()
         print(querystring)
 
 
@@ -240,7 +234,7 @@ def get_team_stats(season=2024):
         "teamStatsSeason": str(season)
     }
     headers = get_headers_and_host()
-    url = f'https://{headers['x-rapidapi-host']}/{database_name}'
+    url = f"https://{headers['x-rapidapi-host']}/{database_name}"
 
     response = requests.get(url, headers=headers, params=querystring)
 
@@ -251,7 +245,6 @@ def get_team_stats(season=2024):
         return data
     else:
         print(f'Failed to retrieve data: {response.status_code}')
-        print()
         print(querystring)
 
 
@@ -272,7 +265,7 @@ def get_ADP_data(adp_type='PPR', adpDate='today', pos=''):
         querystring.pop('pos')
 
     headers = get_headers_and_host()
-    url = f'https://{headers['x-rapidapi-host']}/{database_name}'
+    url = f"https://{headers['x-rapidapi-host']}/{database_name}"
 
     response = requests.get(url, headers=headers, params=querystring)
 
@@ -283,7 +276,6 @@ def get_ADP_data(adp_type='PPR', adpDate='today', pos=''):
         return data
     else:
         print(f'Failed to retrieve data: {response.status_code}')
-        print()
         print(querystring)
 
 
@@ -303,7 +295,7 @@ def get_player_info(playerName='', playerID='', getStats='true'):
         querystring.pop('playerID')
 
     headers = get_headers_and_host()
-    url = f'https://{headers['x-rapidapi-host']}/{database_name}'
+    url = f"https://{headers['x-rapidapi-host']}/{database_name}"
 
     response = requests.get(url, headers=headers, params=querystring)
 
@@ -314,7 +306,6 @@ def get_player_info(playerName='', playerID='', getStats='true'):
         return data
     else:
         print(f'Failed to retrieve data: {response.status_code}')
-        print()
         print(querystring)
 
 
@@ -342,7 +333,7 @@ def get_player_stats(playerID='', gameID='', numberOfGames='', ppr=1.0, passTD=6
         querystring.pop('numberOfGames')
 
     headers = get_headers_and_host()
-    url = f'https://{headers['x-rapidapi-host']}/{database_name}'
+    url = f"https://{headers['x-rapidapi-host']}/{database_name}"
 
     response = requests.get(url, headers=headers, params=querystring)
 
@@ -353,7 +344,6 @@ def get_player_stats(playerID='', gameID='', numberOfGames='', ppr=1.0, passTD=6
         return data
     else:
         print(f'Failed to retrieve data: {response.status_code}')
-        print()
         print(querystring)
 
 
@@ -366,7 +356,7 @@ def get_betting_odds(gameDate, gameID):
         "gameID": str(gameID)
     }
     headers = get_headers_and_host()
-    url = f'https://{headers['x-rapidapi-host']}/{database_name}'
+    url = f"https://{headers['x-rapidapi-host']}/{database_name}"
 
     response = requests.get(url, headers=headers, params=querystring)
 
@@ -377,7 +367,6 @@ def get_betting_odds(gameDate, gameID):
         return data
     else:
         print(f'Failed to retrieve data: {response.status_code}')
-        print()
         print(querystring)
 
 
@@ -394,7 +383,7 @@ def get_team_roster(teamAbv, archiveDate='today'):
         "getStats": "true"
     }
     headers = get_headers_and_host()
-    url = f'https://{headers['x-rapidapi-host']}/{database_name}'
+    url = f"https://{headers['x-rapidapi-host']}/{database_name}"
 
     response = requests.get(url, headers=headers, params=querystring)
 
@@ -405,7 +394,6 @@ def get_team_roster(teamAbv, archiveDate='today'):
         return data
     else:
         print(f'Failed to retrieve data: {response.status_code}')
-        print()
         print(querystring)
 
 
@@ -415,7 +403,7 @@ def get_player_list():
 
     querystring = {}
     headers = get_headers_and_host()
-    url = f'https://{headers['x-rapidapi-host']}/{database_name}'
+    url = f"https://{headers['x-rapidapi-host']}/{database_name}"
 
     response = requests.get(url, headers=headers, params=querystring)
 
@@ -426,5 +414,4 @@ def get_player_list():
         return data
     else:
         print(f'Failed to retrieve data: {response.status_code}')
-        print()
         print(querystring)
