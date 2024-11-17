@@ -1,16 +1,23 @@
 import requests
 import pandas as pd
+import time
 
 __all__ = ['fetch_all_players', 'get_league_info', 'get_league_rosters', 'get_league_users',
            'get_league_matchups', 'get_league_playoff_brackets', 'get_league_transactions', 'get_nfl_state',
            'get_league_traded_picks', 'get_user_drafts', 'get_league_drafts', 'get_draft',
            'get_draft_picks', 'get_traded_draft_picks', 'get_trending_players']
 
+API_calls_per_minute = 1000
+
 def fetch_all_players():
-    # WARNING: Only do this max once per day!
+    print(f'WARNING: Only do this max once per day!')
+
+    start_time = time.time()
 
     url = f'https://api.sleeper.app/v1/players/nfl'
     response = requests.get(url)
+
+    time.sleep(max(60 / API_calls_per_minute - (time.time() - start_time), 0))
 
     # Check if the request was successful
     if response.status_code == 200:
@@ -22,9 +29,12 @@ def fetch_all_players():
 
 
 def get_league_info(league_id='1095093570517798912'):
+    start_time = time.time()
 
     url = f'https://api.sleeper.app/v1/league/{league_id}'
     response = requests.get(url)
+
+    time.sleep(max(60 / API_calls_per_minute - (time.time() - start_time), 0))
 
     # Check if the request was successful
     if response.status_code == 200:
@@ -36,9 +46,12 @@ def get_league_info(league_id='1095093570517798912'):
 
 
 def get_league_rosters(league_id='1095093570517798912'):
+    start_time = time.time()
 
     url = f'https://api.sleeper.app/v1/league/{league_id}/rosters'
     response = requests.get(url)
+
+    time.sleep(max(60 / API_calls_per_minute - (time.time() - start_time), 0))
 
     # Check if the request was successful
     if response.status_code == 200:
@@ -50,9 +63,12 @@ def get_league_rosters(league_id='1095093570517798912'):
 
 
 def get_league_users(league_id='1095093570517798912'):
+    start_time = time.time()
 
     url = f'https://api.sleeper.app/v1/league/{league_id}/users'
     response = requests.get(url)
+
+    time.sleep(max(60 / API_calls_per_minute - (time.time() - start_time), 0))
 
     # Check if the request was successful
     if response.status_code == 200:
@@ -63,10 +79,29 @@ def get_league_users(league_id='1095093570517798912'):
         print(f'Failed to retrieve user data: {response.status_code}')
 
 
+def get_user_leagues(user_id='474988809218420736', year=2024):
+    start_time = time.time()
+
+    url = f'https://api.sleeper.app/v1/user/{user_id}/leagues/nfl/{year}'
+    response = requests.get(url)
+
+    time.sleep(max(60 / API_calls_per_minute - (time.time() - start_time), 0))
+
+    # Check if the request was successful
+    if response.status_code == 200:
+        # Parse the JSON response
+        league_data = response.json()
+        return league_data
+    else:
+        print(f'Failed to retrieve user data: {response.status_code}')
+
 def get_league_matchups(league_id='1095093570517798912', week=1):
+    start_time = time.time()
 
     url = f'https://api.sleeper.app/v1/league/{league_id}/matchups/{week}'
     response = requests.get(url)
+
+    time.sleep(max(60 / API_calls_per_minute - (time.time() - start_time), 0))
 
     # Check if the request was successful
     if response.status_code == 200:
@@ -77,6 +112,7 @@ def get_league_matchups(league_id='1095093570517798912', week=1):
         print(f'Failed to retrieve matchup data: {response.status_code}')
 
 def get_league_playoff_brackets(league_id='1095093570517798912'):
+    start_time = time.time()
 
     url_winners = f'https://api.sleeper.app/v1/league/{league_id}/winners_bracket'
     url_losers  = f'https://api.sleeper.app/v1/league/{league_id}/losers_bracket'
@@ -98,9 +134,12 @@ def get_league_playoff_brackets(league_id='1095093570517798912'):
         return winners_bracket_data, losers_bracket_data
     
 def get_league_transactions(league_id='1095093570517798912', round=1):
+    start_time = time.time()
 
     url = f'https://api.sleeper.app/v1/league/{league_id}/transactions/{round}'
     response = requests.get(url)
+
+    time.sleep(max(60 / API_calls_per_minute - (time.time() - start_time), 0))
 
     # Check if the request was successful
     if response.status_code == 200:
@@ -111,9 +150,12 @@ def get_league_transactions(league_id='1095093570517798912', round=1):
         print(f'Failed to retrieve transaction data: {response.status_code}')
     
 def get_nfl_state(sport='nfl'):
+    start_time = time.time()
 
     url = f'https://api.sleeper.app/v1/state/{sport}'
     response = requests.get(url)
+
+    time.sleep(max(60 / API_calls_per_minute - (time.time() - start_time), 0))
 
     # Check if the request was successful
     if response.status_code == 200:
@@ -124,9 +166,12 @@ def get_nfl_state(sport='nfl'):
         print(f'Failed to retrieve matchup data: {response.status_code}')
     
 def get_league_traded_picks(league_id='1095093570517798912'):
+    start_time = time.time()
 
     url = f'https://api.sleeper.app/v1/league/{league_id}/traded_picks'
     response = requests.get(url)
+
+    time.sleep(max(60 / API_calls_per_minute - (time.time() - start_time), 0))
 
     # Check if the request was successful
     if response.status_code == 200:
@@ -137,10 +182,13 @@ def get_league_traded_picks(league_id='1095093570517798912'):
         print(f'Failed to retrieve traded picks data: {response.status_code}')
     
 def get_user_drafts(user_id='', year=2024):
+    start_time = time.time()
 
     url = f'https://api.sleeper.app/v1/user/{user_id}/drafts/nfl/{year}'
     
     response = requests.get(url)
+
+    time.sleep(max(60 / API_calls_per_minute - (time.time() - start_time), 0))
 
     # Check if the request was successful
     if response.status_code == 200:
@@ -151,9 +199,12 @@ def get_user_drafts(user_id='', year=2024):
         print(f'Failed to retrieve user draft data: {response.status_code}')
 
 def get_league_drafts(league_id='1095093570517798912', year=2024):
+    start_time = time.time()
 
     url = f'https://api.sleeper.app/v1/league/{league_id}/drafts'
     response = requests.get(url)
+
+    time.sleep(max(60 / API_calls_per_minute - (time.time() - start_time), 0))
 
     # Check if the request was successful
     if response.status_code == 200:
@@ -164,9 +215,12 @@ def get_league_drafts(league_id='1095093570517798912', year=2024):
         print(f'Failed to retrieve league draft data: {response.status_code}')
 
 def get_draft(draft_id=''):
+    start_time = time.time()
 
     url = f'https://api.sleeper.app/v1/draft/{draft_id}'
     response = requests.get(url)
+
+    time.sleep(max(60 / API_calls_per_minute - (time.time() - start_time), 0))
 
     # Check if the request was successful
     if response.status_code == 200:
@@ -177,9 +231,12 @@ def get_draft(draft_id=''):
         print(f'Failed to retrieve draft data: {response.status_code}')
 
 def get_draft_picks(draft_id=''):
+    start_time = time.time()
 
     url = f'https://api.sleeper.app/v1/draft/{draft_id}/picks'
     response = requests.get(url)
+
+    time.sleep(max(60 / API_calls_per_minute - (time.time() - start_time), 0))
 
     # Check if the request was successful
     if response.status_code == 200:
@@ -190,9 +247,12 @@ def get_draft_picks(draft_id=''):
         print(f'Failed to retrieve draft pick data: {response.status_code}')
 
 def get_traded_draft_picks(draft_id=''):
+    start_time = time.time()
 
     url = f'https://api.sleeper.app/v1/draft/{draft_id}/traded_picks'
     response = requests.get(url)
+
+    time.sleep(max(60 / API_calls_per_minute - (time.time() - start_time), 0))
 
     # Check if the request was successful
     if response.status_code == 200:
@@ -204,9 +264,12 @@ def get_traded_draft_picks(draft_id=''):
 
 
 def get_trending_players(type='add', lookback_hours=24, limit=25):
+    start_time = time.time()
 
     url = f'https://api.sleeper.app/v1/players/nfl/trending/{type}?lookback_hours={lookback_hours}&limit={limit}'
     response = requests.get(url)
+
+    time.sleep(max(60 / API_calls_per_minute - (time.time() - start_time), 0))
 
     # Check if the request was successful
     if response.status_code == 200:
