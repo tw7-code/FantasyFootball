@@ -25,6 +25,7 @@ def fetch_all_players():
         players_data = response.json()
         return players_data
     else:
+        print()
         print(f'Failed to retrieve league data: {response.status_code}')
 
 
@@ -42,6 +43,7 @@ def get_league_info(league_id='1095093570517798912'):
         league_data = response.json()
         return league_data
     else:
+        print()
         print(f'Failed to retrieve league data: {response.status_code}')
 
 
@@ -59,6 +61,7 @@ def get_league_rosters(league_id='1095093570517798912'):
         league_data = response.json()
         return league_data
     else:
+        print()
         print(f'Failed to retrieve roster data: {response.status_code}')
 
 
@@ -76,6 +79,7 @@ def get_league_users(league_id='1095093570517798912'):
         league_data = response.json()
         return league_data
     else:
+        print()
         print(f'Failed to retrieve user data: {response.status_code}')
 
 
@@ -93,6 +97,7 @@ def get_user_leagues(user_id='474988809218420736', year=2024):
         league_data = response.json()
         return league_data
     else:
+        print()
         print(f'Failed to retrieve user data: {response.status_code}')
 
 def get_league_matchups(league_id='1095093570517798912', week=1):
@@ -109,6 +114,7 @@ def get_league_matchups(league_id='1095093570517798912', week=1):
         matchup_data = response.json()
         return matchup_data
     else:
+        print()
         print(f'Failed to retrieve matchup data: {response.status_code}')
 
 def get_league_playoff_brackets(league_id='1095093570517798912'):
@@ -120,11 +126,15 @@ def get_league_playoff_brackets(league_id='1095093570517798912'):
     response_winners = requests.get(url_winners)
     response_losers = requests.get(url_losers)
 
+    time.sleep(max(60 / API_calls_per_minute - (time.time() - start_time), 0))
+
     failed = False
     if response_winners.status_code != 200:
+        print()
         print(f'Failed to retrieve winners bracket data: {response_winners.status_code}')
         failed = True  
     if response_losers.status_code != 200:
+        print()
         print(f'Failed to retrieve losers bracket data: {response_losers.status_code}')
         failed = True
     
@@ -147,6 +157,7 @@ def get_league_transactions(league_id='1095093570517798912', round=1):
         transaction_data = response.json()
         return transaction_data
     else:
+        print()
         print(f'Failed to retrieve transaction data: {response.status_code}')
     
 def get_nfl_state(sport='nfl'):
@@ -163,6 +174,7 @@ def get_nfl_state(sport='nfl'):
         state_data = response.json()
         return state_data
     else:
+        print()
         print(f'Failed to retrieve matchup data: {response.status_code}')
     
 def get_league_traded_picks(league_id='1095093570517798912'):
@@ -179,6 +191,7 @@ def get_league_traded_picks(league_id='1095093570517798912'):
         traded_picks_data = response.json()
         return traded_picks_data
     else:
+        print()
         print(f'Failed to retrieve traded picks data: {response.status_code}')
     
 def get_user_drafts(user_id='', year=2024):
@@ -196,6 +209,7 @@ def get_user_drafts(user_id='', year=2024):
         traded_picks_data = response.json()
         return traded_picks_data
     else:
+        print()
         print(f'Failed to retrieve user draft data: {response.status_code}')
 
 def get_league_drafts(league_id='1095093570517798912', year=2024):
@@ -212,6 +226,7 @@ def get_league_drafts(league_id='1095093570517798912', year=2024):
         draft_data = response.json()
         return draft_data
     else:
+        print()
         print(f'Failed to retrieve league draft data: {response.status_code}')
 
 def get_draft(draft_id=''):
@@ -228,6 +243,7 @@ def get_draft(draft_id=''):
         draft_data = response.json()
         return draft_data
     else:
+        print()
         print(f'Failed to retrieve draft data: {response.status_code}')
 
 def get_draft_picks(draft_id=''):
@@ -244,6 +260,7 @@ def get_draft_picks(draft_id=''):
         draft_pick_data = response.json()
         return draft_pick_data
     else:
+        print()
         print(f'Failed to retrieve draft pick data: {response.status_code}')
 
 def get_traded_draft_picks(draft_id=''):
@@ -260,6 +277,7 @@ def get_traded_draft_picks(draft_id=''):
         traded_pick_data = response.json()
         return traded_pick_data
     else:
+        print()
         print(f'Failed to retrieve traded draft pick data: {response.status_code}')
 
 
@@ -277,4 +295,5 @@ def get_trending_players(type='add', lookback_hours=24, limit=25):
         player_trends_data = response.json()
         return player_trends_data
     else:
+        print()
         print(f'Failed to retrieve player trends data: {response.status_code}')

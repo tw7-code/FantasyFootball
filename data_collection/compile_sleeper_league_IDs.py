@@ -118,7 +118,6 @@ def save_progress(last_save_time, league_data, league_queue, users_queried, user
     return time.time(), 1000 / time_since_last_save
 
 
-# Function to update the plot with the newest data point
 def update_plot(ax1, ax2, new_x, new_y, lpm):
     # Update main chart (ax1)
     line1 = ax1.lines[0] if ax1.lines else None
@@ -170,7 +169,6 @@ def update_plot(ax1, ax2, new_x, new_y, lpm):
     ax2.set_ylabel('Leagues/Minute')
     ax2.set_title('League Capture Rate Monitor')
     ax2.grid(True)
-    ax2.legend(loc='best')
 
     # Update the plots
     plt.draw()
