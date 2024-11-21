@@ -2,4 +2,7 @@
 
 # Environment variables
 .env
-.pyc
+*.pyc
+*.json
+*.csv
+*.pkl

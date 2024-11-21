@@ -1,11 +1,8 @@
 import sleeper_API as sleeper
 import pandas as pd
-import numpy as np
 import os
 import json
-import pickle
-import time
-import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt 
 
 import warnings
 warnings.filterwarnings(action='ignore', category=FutureWarning)
@@ -43,11 +40,11 @@ def get_league_IDs(initial_league_id='1095093570517798912'):
         # Cycle through each queued league to get set of unique users
         current_query_count = 0
         current_query_total = len(league_queue)
+        original_user_queue_length = len(user_queue)
         while len(league_queue) > 0:
             # Pop from the leageu queue and print status update
             league_id = next(iter(league_queue))
             current_query_count += 1
-            print(f'\r  Processing League Queue | Progress: {current_query_count}/{current_query_total} | Unique Users Found: {len(user_queue)}', end='', flush=True)
             league_data = pd.concat([league_data, pd.json_normalize(league_queue.pop(league_id)).convert_dtypes()], ignore_index=True)
             # Query sleeper API for all users in each league
             try:
@@ -57,9 +54,10 @@ def get_league_IDs(initial_league_id='1095093570517798912'):
             except Exception as e:
                 print(f' | Error: {e}')
                 continue
+            print(f'\r  Processing League Queue | Progress: {current_query_count:,}/{current_query_total:,} | Users Found: {len(user_queue)-original_user_queue_length:,}', end='', flush=True)
         user_queue = list(set(user_queue))
         print()
-        print(f' Users Queued: {len(user_queue)}')
+        print(f'Total Users Queued: {len(user_queue):,}')
 
         # Save progress every cycle no matter the time stamp
         save_progress(league_data, league_queue, users_queried, user_queue)
@@ -73,16 +71,20 @@ def get_league_IDs(initial_league_id='1095093570517798912'):
             user_id = user_queue.pop(0)
             users_queried.append(user_id)
             current_query_count += 1
-            print(f'\r  Processing User Queue | Progress: {current_query_count}/{current_query_total} | Unique Leagues Found: {len(league_queue)}', end='', flush=True)
             # Connect to sleeper API to get al leagues for the user
             try:
                 user_leagues = sleeper.get_user_leagues(user_id)
-                user_leagues = {league['league_id']:league for league in user_leagues if league['league_id'] not in league_data.league_id.values}
+                user_leagues = {
+                    league['league_id']: league
+                    for league in user_leagues
+                    if int(league['league_id']) not in list(map(int, league_data.league_id.values))
+                }
                 league_queue.update(user_leagues)
             except Exception as e:
                 print(f' | Error: {e}')
+            print(f'\r  Processing User Queue | Progress: {current_query_count:,}/{current_query_total:,} | Unique Leagues Found: {len(league_queue):,}', end='', flush=True)
         print()
-        print(f' Leagues Queued: {len(league_queue)}')
+        print(f' Leagues Queued: {len(league_queue):,}')
 
     return league_data, league_queue, users_queried, user_queue
 
@@ -91,12 +93,13 @@ def save_progress(league_data, league_queue, users_queried, user_queue):
     # Create Data folder if it does not exist
     if not os.path.exists('data/fantasy_leagues/'):
         os.makedirs('data/fantasy_leagues/')
+    league_data = league_data.drop(columns=[col for col in league_data.columns if col.startswith('Unnamed')])
     league_data.to_csv('data/fantasy_leagues/sleeper_leagues.csv')
     queue_dict = {'league_queue': league_queue, 'users_queried': users_queried, 'user_queue': user_queue}
     with open('data/fantasy_leagues/sleeper_leagues_queue.json', 'w') as f:
         json.dump(queue_dict, f)
     print()
-    print(f'Saved Progress | {len(league_data)} Leagues Captured')
+    print(f'Saved Progress | {len(league_data):,} Leagues Captured')
     print()
 
 
@@ -143,6 +146,4 @@ def update_plot(ax, new_x, new_y):
 
 if __name__ == "__main__":
     leagues = get_league_IDs()
-    with open('league_data.pkl', 'wb') as f:
-        pickle.dump(leagues, f)
     
