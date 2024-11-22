@@ -9,6 +9,25 @@ import warnings
 warnings.filterwarnings(action='ignore', category=FutureWarning)
 
 def get_league_IDs(initial_league_id='1095093570517798912'):
+    """
+    Retrieves and processes league IDs from the Sleeper fantasy football platform.
+
+    This function initializes a dynamic visualization of the data retrieval process
+    and iteratively queries Sleeper's API to discover unique leagues and their associated
+    users. It maintains progress across sessions by saving and loading data, and dynamically
+    updates plots showing the current state of the data acquisition.
+
+    Parameters:
+        initial_league_id (str): The ID of the starting league to begin data collection. 
+                                Defaults to '1095093570517798912'.
+
+    Returns:
+        tuple: A tuple containing:
+            - league_data (pandas.DataFrame): A dataframe containing all retrieved league information.
+            - league_queue (dict): A dictionary of leagues queued for processing.
+            - users_queried (list): A list of user IDs that have been queried.
+            - user_queue (list): A list of user IDs still queued for querying.
+    """
     # Initialize plot
     plt.ion()  # Turn on interactive mode
     _, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 13))  # Create two vertically stacked subplots
@@ -102,6 +121,25 @@ def get_league_IDs(initial_league_id='1095093570517798912'):
 
 
 def save_progress(last_save_time, league_data, league_queue, users_queried, user_queue):
+    """
+    Saves the current progress of league and user data retrieval to disk.
+
+    This function ensures that progress is preserved by saving the league data
+    and the current state of the queues to disk in a structured format. It also
+    logs the number of leagues captured and calculates the rate of league processing.
+
+    Parameters:
+        last_save_time (float): The timestamp of the last save operation.
+        league_data (pandas.DataFrame): A dataframe containing all retrieved league information.
+        league_queue (dict): A dictionary of leagues queued for processing.
+        users_queried (list): A list of user IDs that have been queried.
+        user_queue (list): A list of user IDs still queued for querying.
+
+    Returns:
+        tuple: A tuple containing:
+            - current_time (float): The updated timestamp of the save operation.
+            - processing_rate (float): The calculated rate of leagues processed per minute since the last save.
+    """
     # Create Data folder if it does not exist
     if not os.path.exists('data/fantasy_leagues/'):
         os.makedirs('data/fantasy_leagues/')
@@ -119,6 +157,25 @@ def save_progress(last_save_time, league_data, league_queue, users_queried, user
 
 
 def update_plot(ax1, ax2, new_x, new_y, lpm):
+    """
+    Updates the dynamic plots for league and user data retrieval progress.
+
+    This function updates two plots:
+    1. A plot showing the number of user IDs queued versus leagues captured.
+    2. A plot monitoring the rate of league capture (leagues per minute).
+
+    It recalculates the data, clears the plots, and redraws them with the latest information.
+
+    Parameters:
+        ax1 (matplotlib.axes.Axes): The first subplot for league-to-user data visualization.
+        ax2 (matplotlib.axes.Axes): The second subplot for monitoring leagues captured per minute.
+        new_x (int): The current number of leagues captured.
+        new_y (int): The current size of the user ID queue.
+        lpm (float): The calculated leagues per minute processing rate.
+
+    Returns:
+        None
+    """
     # Update main chart (ax1)
     line1 = ax1.lines[0] if ax1.lines else None
     if line1:
