@@ -31,19 +31,9 @@ def get_league_IDs(initial_league_id='1095093570517798912'):
     # Initialize plot
     plt.ion()  # Turn on interactive mode
     _, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 13))  # Create two vertically stacked subplots
-
-    # Main plot (ax1)
-    ax1.plot([], [], 'o-', label='Dynamic Points')  # Initial empty scatter plot
-    ax1.set_xlabel('X Value')
-    ax1.set_ylabel('Y Value')
-    ax1.set_title('Dynamic Plot of X vs Y')
+    ax1.plot([], [], 'o-', label='User Queue Points')  # Initial empty scatter plot
     ax1.grid(True)
-
-    # Subplot for LPM (ax2)
     ax2.plot([], [], 'o-', label='LPM Points', color='orange')  # Initial empty scatter plot
-    ax2.set_xlabel('X Value')
-    ax2.set_ylabel('LPM Value')
-    ax2.set_title('Dynamic Plot of X vs LPM')
     ax2.grid(True)
 
     plt.tight_layout()  # Adjust spacing between subplots
@@ -108,10 +98,10 @@ def get_league_IDs(initial_league_id='1095093570517798912'):
             except Exception as e:
                 print(f' | Error: {e}')
                 continue
-            print(f'\rProcessing League Queue | Progress: {current_query_count:,}/{current_query_total:,} | Total Users in Leagues: {len(user_queue)-original_user_queue_length:,}', end='', flush=True)
+            print(f'\rProcessing League Queue | Progress: {current_query_count:,}/{current_query_total:,} | Total Users in Leagues: {len(user_queue)-original_user_queue_length:,} | Total League Count: {league_data.shape(0)}', end='', flush=True)
         user_queue = list(set(user_queue))
         print()
-        print(f'Total Users Queued: {len(user_queue):,} | Unique Users Added: {len(user_queue)-original_user_queue_length:,}')
+        print(f'Total Users Queued: {len(user_queue):,} | Unique Users Added: {len(user_queue)-original_user_queue_length:,} | Total Users Discovered: {len(user_queue) + len(users_queried):,}')
 
         # Save progress every cycle
         last_save_time, lpm = save_progress(last_save_time, league_data, league_queue, users_queried, user_queue)
