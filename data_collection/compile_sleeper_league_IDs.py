@@ -45,7 +45,7 @@ def get_league_IDs(initial_league_id='1095093570517798912'):
     queue_save_file_name = 'data/fantasy_leagues/sleeper_leagues_queue.json'
     if os.path.exists(save_file_name) and os.path.exists(queue_save_file_name):
         with open(save_file_name, 'r') as f:
-            league_data = pd.read_csv(save_file_name)
+            league_data = pd.read_csv(save_file_name, low_memory=False)
         with open(queue_save_file_name, 'r') as f:
             queue_data = json.load(f)
             league_queue = queue_data['league_queue']
@@ -98,7 +98,7 @@ def get_league_IDs(initial_league_id='1095093570517798912'):
             except Exception as e:
                 print(f' | Error: {e}')
                 continue
-            print(f'\rProcessing League Queue | Progress: {current_query_count:,}/{current_query_total:,} | Total Users in Leagues: {len(user_queue)-original_user_queue_length:,} | Total League Count: {league_data.shape(0)}', end='', flush=True)
+            print(f'\rProcessing League Queue | Progress: {current_query_count:,}/{current_query_total:,} | Total Users in Leagues: {len(user_queue)-original_user_queue_length:,} | Total League Count: {len(league_data)}', end='', flush=True)
         user_queue = list(set(user_queue))
         print()
         print(f'Total Users Queued: {len(user_queue):,} | Unique Users Added: {len(user_queue)-original_user_queue_length:,} | Total Users Discovered: {len(user_queue) + len(users_queried):,}')
