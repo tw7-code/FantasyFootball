@@ -30,7 +30,8 @@ def get_league_IDs(initial_league_id='1095093570517798912', leagues_per_cycle=10
             - users_queried (list): A list of user IDs that have been queried.
             - user_queue (list): A list of user IDs still queued for querying.
     """
-    s3 = boto3.client('s3')
+    session = boto3.Session(profile_name='tw7')
+    s3 = session.client('s3')
     download_files_from_s3(s3, 'tw7-bucket-ffb', 'fantasy_leagues', 'data')
     
     if plot_bool:
@@ -38,6 +39,7 @@ def get_league_IDs(initial_league_id='1095093570517798912', leagues_per_cycle=10
 
     last_save_time = time.time()
 
+    # Initialize the function to pick up where it left off
     league_data_csv = os.path.join('data', 'fantasy_leagues', 'sleeper_leagues.csv')
     queue_csv = os.path.join('data', 'fantasy_leagues', 'sleeper_leagues_queue.json')
     league_data, league_queue, users_queried, user_queue = initialize_league_query(league_data_csv, queue_csv, initial_league_id)
@@ -174,7 +176,7 @@ def upload_directory_to_s3(s3, bucket_name, local_directory):
         bucket_name (str): Name of the S3 bucket.
         local_directory (str): Path to the local base directory to upload.
     """
-    print('Uploading Files to S3')
+    print('Uploading Files to S3:')
     try:
         for root, _, files in os.walk(local_directory):
             for file in files:
@@ -186,7 +188,7 @@ def upload_directory_to_s3(s3, bucket_name, local_directory):
                 
                 # Upload the file
                 s3.upload_file(local_file_path, bucket_name, s3_file_key)
-                print(f"Uploaded {local_file_path} to s3://{bucket_name}/{s3_file_key}")
+                print(f"  Uploaded {local_file_path} to s3://{bucket_name}/{s3_file_key}")
     except Exception as e:
         print(f"Error uploading directory: {e}")
         
@@ -201,7 +203,7 @@ def download_files_from_s3(s3, bucket_name, s3_prefix, local_directory):
         s3_prefix (str): The prefix (folder structure) in the S3 bucket.
         local_directory (str): Local directory to save the files.
     """
-    print('Downloading Files from S3')
+    print('Downloading Files from S3:')
     try:
         # Normalize the base local directory path
         base_local_directory = os.path.normpath(os.path.join(local_directory, s3_prefix.strip('/').replace("/", "_")))
@@ -227,7 +229,7 @@ def download_files_from_s3(s3, bucket_name, s3_prefix, local_directory):
 
             # Download the file
             s3.download_file(bucket_name, s3_file_key, local_file_path)
-            print(f"Downloaded {s3_file_key} to {local_file_path}")
+            print(f"  Downloaded {s3_file_key} to {local_file_path}")
     
     except Exception as e:
         print(f"Error downloading files: {e}")
