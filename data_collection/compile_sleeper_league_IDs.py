@@ -4,11 +4,13 @@ import os
 import json
 import matplotlib.pyplot as plt 
 import time
+import boto3
+from botocore.config import Config
 
 import warnings
 warnings.filterwarnings(action='ignore', category=FutureWarning)
 
-def get_league_IDs(initial_league_id='1095093570517798912'):
+def get_league_IDs(initial_league_id='1095093570517798912', leagues_per_cycle=1000, plot_bool=False):
     """
     Retrieves and processes league IDs from the Sleeper fantasy football platform.
 
@@ -19,7 +21,7 @@ def get_league_IDs(initial_league_id='1095093570517798912'):
 
     Parameters:
         initial_league_id (str): The ID of the starting league to begin data collection. 
-                                Defaults to '1095093570517798912'.
+            - Defaults to '1095093570517798912'.
 
     Returns:
         tuple: A tuple containing:
@@ -28,25 +30,37 @@ def get_league_IDs(initial_league_id='1095093570517798912'):
             - users_queried (list): A list of user IDs that have been queried.
             - user_queue (list): A list of user IDs still queued for querying.
     """
-    # Initialize plot
-    plt.ion()  # Turn on interactive mode
-    _, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 13))  # Create two vertically stacked subplots
-    ax1.plot([], [], 'o-', label='User Queue Points')  # Initial empty scatter plot
-    ax1.grid(True)
-    ax2.plot([], [], 'o-', label='LPM Points', color='orange')  # Initial empty scatter plot
-    ax2.grid(True)
-
-    plt.tight_layout()  # Adjust spacing between subplots
+    s3 = boto3.client('s3')
+    download_files_from_s3(s3, 'tw7-bucket-ffb', 'fantasy_leagues', 'data')
+    
+    if plot_bool:
+        ax1, ax2 = initialize_plot()
 
     last_save_time = time.time()
 
+    league_data_csv = 'data/fantasy_leagues/sleeper_leagues.csv'
+    queue_csv = 'data/fantasy_leagues/sleeper_leagues_queue.json'
+    league_data, league_queue, users_queried, user_queue = initialize_league_query(league_data_csv, queue_csv, initial_league_id)
+
+    while (len(league_queue) > 0 or len(user_queue) > 0):
+        # Process queues
+        user_queue, users_queried, league_queue, league_data = search_user_queue(user_queue, users_queried, league_queue, league_data, leagues_per_cycle)
+        user_queue, users_queried, league_queue, league_data = search_league_queue(user_queue, users_queried, league_queue, league_data)
+
+        # Save progress every cycle
+        last_save_time, lpm = save_progress(last_save_time, league_data, league_queue, users_queried, user_queue)
+        upload_directory_to_s3(s3, 'tw7-bucket-ffb', './fantasy_leagues')
+        
+        # Update plots
+        if plot_bool:
+            update_plot(ax1, ax2, len(league_data), len(user_queue), lpm)
+
+def initialize_league_query(league_data_csv, queue_csv, initial_league_id):
     # Load the saved queue data to pick up where last left off
-    save_file_name = 'data/fantasy_leagues/sleeper_leagues.csv'
-    queue_save_file_name = 'data/fantasy_leagues/sleeper_leagues_queue.json'
-    if os.path.exists(save_file_name) and os.path.exists(queue_save_file_name):
-        with open(save_file_name, 'r') as f:
-            league_data = pd.read_csv(save_file_name, low_memory=False)
-        with open(queue_save_file_name, 'r') as f:
+    if os.path.exists(league_data_csv) and os.path.exists(queue_csv):
+        with open(league_data_csv, 'r') as f:
+            league_data = pd.read_csv(league_data_csv, low_memory=False)
+        with open(queue_csv, 'r') as f:
             queue_data = json.load(f)
             league_queue = queue_data['league_queue']
             user_queue = queue_data['user_queue']
@@ -56,59 +70,62 @@ def get_league_IDs(initial_league_id='1095093570517798912'):
         league_queue = {initial_league_id: sleeper.get_league_info(initial_league_id)}
         user_queue = []
         users_queried = []
-
-    while (len(league_queue) > 0 or len(user_queue) > 0):
-        # Cycle through queued users to find new unique leagues
-        current_query_count = 0
-        current_query_total = len(user_queue)
-        while len(league_queue) < 1000 and len(user_queue) > 0:
-            # Pop from the user queue and print status update
-            user_id = user_queue.pop(0)
-            users_queried.append(user_id)
-            current_query_count += 1
-            # Connect to sleeper API to get al leagues for the user
-            try:
-                user_leagues = sleeper.get_user_leagues(user_id)
-                user_leagues = {
-                    league['league_id']: league
-                    for league in user_leagues
-                    if int(league['league_id']) not in list(map(int, league_data.league_id.values))
-                }
-                league_queue.update(user_leagues)
-            except Exception as e:
-                print(f' | Error: {e}')
-            print(f'\rProcessing User Queue | Progress: {current_query_count:,}/{current_query_total:,} | Unique Leagues Found: {len(league_queue):,}', end='', flush=True)
-        print()
-        print(f'Leagues Queued: {len(league_queue):,}')
-
-        # Cycle through each queued league to get set of unique users
-        current_query_count = 0
-        current_query_total = len(league_queue)
-        original_user_queue_length = len(user_queue)
-        while len(league_queue) > 0:
-            # Pop from the leageu queue and print status update
-            league_id = next(iter(league_queue))
-            current_query_count += 1
-            league_data = pd.concat([league_data, pd.json_normalize(league_queue.pop(league_id)).convert_dtypes()], ignore_index=True)
-            # Query sleeper API for all users in each league
-            try:
-                league_users = sleeper.get_league_users(league_id)
-                league_users = [user['user_id'] for user in league_users]
-                user_queue.extend(league_users)
-            except Exception as e:
-                print(f' | Error: {e}')
-                continue
-            print(f'\rProcessing League Queue | Progress: {current_query_count:,}/{current_query_total:,} | Total Users in Leagues: {len(user_queue)-original_user_queue_length:,} | Total League Count: {len(league_data)}', end='', flush=True)
-        user_queue = list(set(user_queue))
-        print()
-        print(f'Total Users Queued: {len(user_queue):,} | Unique Users Added: {len(user_queue)-original_user_queue_length:,} | Total Users Discovered: {len(user_queue) + len(users_queried):,}')
-
-        # Save progress every cycle
-        last_save_time, lpm = save_progress(last_save_time, league_data, league_queue, users_queried, user_queue)
-        update_plot(ax1, ax2, len(league_data), len(user_queue), lpm)
-
+        
     return league_data, league_queue, users_queried, user_queue
 
+def search_user_queue(user_queue, users_queried, league_queue, league_data, leagues_per_cycle):
+    # Cycle through queued users to find new unique leagues
+    current_query_count = 0
+    current_query_total = len(user_queue)
+    while len(league_queue) < leagues_per_cycle and len(user_queue) > 0:
+        # Pop from the user queue and print status update
+        user_id = user_queue.pop(0)
+        users_queried.append(user_id)
+        current_query_count += 1
+        # Connect to sleeper API to get al leagues for the user
+        try:
+            user_leagues = sleeper.get_user_leagues(user_id)
+            user_leagues = {
+                league['league_id']: league
+                for league in user_leagues
+                if int(league['league_id']) not in list(map(int, league_data.league_id.values))
+            }
+            league_queue.update(user_leagues)
+        except Exception as e:
+            print()
+            print(f'League Processing Error: {e}')
+            continue
+        print(f'\rProcessing User Queue | Progress: {current_query_count:,}/{current_query_total:,} | Unique Leagues Found: {len(league_queue):,}', end='', flush=True)
+    print()
+    print(f'Leagues Queued: {len(league_queue):,}')
+    
+    return user_queue, users_queried, league_queue, league_data
+
+def search_league_queue(user_queue, users_queried, league_queue, league_data):
+    # Cycle through each queued league to get set of unique users
+    current_query_count = 0
+    current_query_total = len(league_queue)
+    original_user_queue_length = len(user_queue)
+    while len(league_queue) > 0:
+        # Pop from the leageu queue and print status update
+        league_id = next(iter(league_queue))
+        current_query_count += 1
+        league_data = pd.concat([league_data, pd.json_normalize(league_queue.pop(league_id)).convert_dtypes()], ignore_index=True)
+        # Query sleeper API for all users in each league
+        try:
+            league_users = sleeper.get_league_users(league_id)
+            league_users = [user['user_id'] for user in league_users]
+            user_queue.extend(league_users)
+        except Exception as e:
+            print()
+            print(f'User Processing Error: {e}')
+            continue
+        print(f'\rProcessing League Queue | Progress: {current_query_count:,}/{current_query_total:,} | Total Users in Leagues: {len(user_queue)-original_user_queue_length:,} | Total League Count: {len(league_data):,}', end='', flush=True)
+    user_queue = list(set(user_queue))
+    print()
+    print(f'Total Users Queued: {len(user_queue):,} | Unique Users Added: {len(user_queue)-original_user_queue_length:,} | Total Users Discovered: {len(user_queue) + len(users_queried):,}')
+    
+    return user_queue, users_queried, league_queue, league_data
 
 def save_progress(last_save_time, league_data, league_queue, users_queried, user_queue):
     """
@@ -145,6 +162,73 @@ def save_progress(last_save_time, league_data, league_queue, users_queried, user
     print()
     return time.time(), 1000 / time_since_last_save
 
+def upload_directory_to_s3(s3, bucket_name, local_directory):
+    """
+    Uploads a directory and its contents to an S3 bucket, preserving the full folder structure as S3 prefixes.
+
+    Args:
+        bucket_name (str): Name of the S3 bucket.
+        base_directory (str): Path to the local base directory to upload.
+    """
+    print('Uploading Files to S3')
+    try:
+        for root, _, files in os.walk(local_directory):
+            for file in files:
+                # Construct full local file path
+                local_file_path = os.path.join(root, file)
+                # Construct S3 object key (relative path including base directory)
+                s3_file_key = os.path.relpath(local_file_path, os.path.dirname(local_directory)).replace("\\", "/")
+                # Upload the file
+                s3.upload_file(local_file_path, bucket_name, s3_file_key)
+                print(f"Uploaded {local_file_path} to s3://{bucket_name}/{s3_file_key}")
+    except Exception as e:
+        print(f"Error uploading directory: {e}")
+        
+def download_files_from_s3(s3, bucket_name, s3_prefix, local_directory):
+    """
+    Downloads all files from an S3 prefix and saves them into a specified local directory,
+    preserving the prefix and filenames.
+
+    Args:
+        s3 (boto3.client): An initialized S3 client.
+        bucket_name (str): Name of the S3 bucket.
+        s3_prefix (str): The prefix (folder structure) in the S3 bucket.
+        local_directory (str): Local directory to save the files.
+    """
+    try:
+        # Ensure the local directory exists
+        base_local_directory = os.path.join(local_directory, s3_prefix.strip('/').replace("/", "_"))
+        os.makedirs(base_local_directory, exist_ok=True)
+
+        # List all objects under the given prefix
+        response = s3.list_objects_v2(Bucket=bucket_name, Prefix=s3_prefix)
+
+        if 'Contents' not in response:
+            print(f"No files found under prefix '{s3_prefix}' in bucket '{bucket_name}'.")
+            return
+
+        # Download all files
+        for obj in response['Contents']:
+            s3_file_key = obj['Key']
+            relative_path = s3_file_key[len(s3_prefix):].lstrip('/')
+            local_file_path = os.path.join(base_local_directory, relative_path)
+            os.makedirs(os.path.dirname(local_file_path), exist_ok=True)
+            s3.download_file(bucket_name, s3_file_key, local_file_path)
+            print(f"Downloaded {s3_file_key} to {local_file_path}")
+    
+    except Exception as e:
+        print(f"Error downloading files: {e}")
+
+def initialize_plot():
+    # Initialize plot
+    plt.ion()  # Turn on interactive mode
+    _, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 13))  # Create two vertically stacked subplots
+    ax1.plot([], [], 'o-', label='User Queue Points')  # Initial empty scatter plot
+    ax1.grid(True)
+    ax2.plot([], [], 'o-', label='LPM Points', color='orange')  # Initial empty scatter plot
+    ax2.grid(True)
+    
+    return ax1, ax2
 
 def update_plot(ax1, ax2, new_x, new_y, lpm):
     """
@@ -220,8 +304,10 @@ def update_plot(ax1, ax2, new_x, new_y, lpm):
     # Update the plots
     plt.draw()
     plt.pause(1)
-
+    
+def clean_sleeper_league_data(league_data):
+    pass
 
 if __name__ == "__main__":
-    leagues = get_league_IDs()
+    get_league_IDs(leagues_per_cycle=5000)
     
