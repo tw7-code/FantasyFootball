@@ -38,8 +38,8 @@ def get_league_IDs(initial_league_id='1095093570517798912', leagues_per_cycle=10
 
     last_save_time = time.time()
 
-    league_data_csv = 'data/fantasy_leagues/sleeper_leagues.csv'
-    queue_csv = 'data/fantasy_leagues/sleeper_leagues_queue.json'
+    league_data_csv = os.path.join('data', 'fantasy_leagues', 'sleeper_leagues.csv')
+    queue_csv = os.path.join('data', 'fantasy_leagues', 'sleeper_leagues_queue.json')
     league_data, league_queue, users_queried, user_queue = initialize_league_query(league_data_csv, queue_csv, initial_league_id)
 
     while (len(league_queue) > 0 or len(user_queue) > 0):
@@ -49,7 +49,7 @@ def get_league_IDs(initial_league_id='1095093570517798912', leagues_per_cycle=10
 
         # Save progress every cycle
         last_save_time, lpm = save_progress(last_save_time, league_data, league_queue, users_queried, user_queue)
-        upload_directory_to_s3(s3, 'tw7-bucket-ffb', './fantasy_leagues')
+        upload_directory_to_s3(s3, 'tw7-bucket-ffb', 'fantasy_leagues')
         
         # Update plots
         if plot_bool:
@@ -148,12 +148,15 @@ def save_progress(last_save_time, league_data, league_queue, users_queried, user
             - processing_rate (float): The calculated rate of leagues processed per minute since the last save.
     """
     # Create Data folder if it does not exist
-    if not os.path.exists('data/fantasy_leagues/'):
-        os.makedirs('data/fantasy_leagues/')
+    directory = os.path.join('data', 'fantasy_leagues')
+    league_data_file = os.path.join(directory, 'sleeper_leagues.csv')
+    queue_data_file = os.path.join(directory, 'sleeper_leagues_queue.json')
+    if not os.path.exists(directory):
+        os.makedirs(directory)
     league_data = league_data.drop(columns=[col for col in league_data.columns if col.startswith('Unnamed')])
-    league_data.to_csv('data/fantasy_leagues/sleeper_leagues.csv')
+    league_data.to_csv(league_data_file)
     queue_dict = {'league_queue': league_queue, 'users_queried': users_queried, 'user_queue': user_queue}
-    with open('data/fantasy_leagues/sleeper_leagues_queue.json', 'w') as f:
+    with open(queue_data_file, 'w') as f:
         json.dump(queue_dict, f)
     time_since_last_save = (time.time() - last_save_time) / 60 # in minutes
     print()
@@ -167,8 +170,9 @@ def upload_directory_to_s3(s3, bucket_name, local_directory):
     Uploads a directory and its contents to an S3 bucket, preserving the full folder structure as S3 prefixes.
 
     Args:
+        s3 (boto3.client): An initialized S3 client.
         bucket_name (str): Name of the S3 bucket.
-        base_directory (str): Path to the local base directory to upload.
+        local_directory (str): Path to the local base directory to upload.
     """
     print('Uploading Files to S3')
     try:
@@ -176,8 +180,10 @@ def upload_directory_to_s3(s3, bucket_name, local_directory):
             for file in files:
                 # Construct full local file path
                 local_file_path = os.path.join(root, file)
-                # Construct S3 object key (relative path including base directory)
-                s3_file_key = os.path.relpath(local_file_path, os.path.dirname(local_directory)).replace("\\", "/")
+
+                # Use os.path.relpath for relative paths to ensure portability
+                s3_file_key = os.path.relpath(local_file_path, local_directory).replace(os.sep, "/")
+                
                 # Upload the file
                 s3.upload_file(local_file_path, bucket_name, s3_file_key)
                 print(f"Uploaded {local_file_path} to s3://{bucket_name}/{s3_file_key}")
@@ -195,9 +201,10 @@ def download_files_from_s3(s3, bucket_name, s3_prefix, local_directory):
         s3_prefix (str): The prefix (folder structure) in the S3 bucket.
         local_directory (str): Local directory to save the files.
     """
+    print('Downloading Files from S3')
     try:
-        # Ensure the local directory exists
-        base_local_directory = os.path.join(local_directory, s3_prefix.strip('/').replace("/", "_"))
+        # Normalize the base local directory path
+        base_local_directory = os.path.normpath(os.path.join(local_directory, s3_prefix.strip('/').replace("/", "_")))
         os.makedirs(base_local_directory, exist_ok=True)
 
         # List all objects under the given prefix
@@ -210,9 +217,15 @@ def download_files_from_s3(s3, bucket_name, s3_prefix, local_directory):
         # Download all files
         for obj in response['Contents']:
             s3_file_key = obj['Key']
-            relative_path = s3_file_key[len(s3_prefix):].lstrip('/')
-            local_file_path = os.path.join(base_local_directory, relative_path)
+
+            # Use relative paths and normalize them for the local system
+            relative_path = os.path.normpath(s3_file_key[len(s3_prefix):].lstrip('/'))
+            local_file_path = os.path.normpath(os.path.join(base_local_directory, relative_path))
+
+            # Ensure local directories exist
             os.makedirs(os.path.dirname(local_file_path), exist_ok=True)
+
+            # Download the file
             s3.download_file(bucket_name, s3_file_key, local_file_path)
             print(f"Downloaded {s3_file_key} to {local_file_path}")
     
